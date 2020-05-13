@@ -1,0 +1,149 @@
+/*
+Commander Lambda has asked for your help to refine the automatic quantum antimatter fuel injection system for her LAMBCHOP doomsday device. It's a great chance for you to get a closer look at the LAMBCHOP - and maybe sneak in a bit of sabotage while you're at it - so you took the job gladly.
+
+Quantum antimatter fuel comes in small pellets, which is convenient since the many moving parts of the LAMBCHOP each need to be fed fuel one pellet at a time. However, minions dump pellets in bulk into the fuel intake. You need to figure out the most efficient way to sort and shift the pellets down to a single pellet at a time.
+
+The fuel control mechanisms have three operations:
+
+Add one fuel pellet
+Remove one fuel pellet
+Divide the entire group of fuel pellets by 2 (due to the destructive energy released when a quantum antimatter pellet is cut in half, the safety controls will only allow this to happen if there is an even number of pellets)
+Write a function called answer(n) which takes a positive integer as a string and returns the minimum number of operations needed to transform the number of pellets to 1. The fuel intake control panel can only display a number up to 309 digits long, so there won't ever be more pellets than you can express in that many digits.
+
+For example:
+
+answer(4) returns 2: 4 -> 2 -> 1  
+answer(15) returns 5: 15 -> 16 -> 8 -> 4 -> 2 -> 1
+*/
+
+import java.util.ArrayList;
+import java.util.HashMap;
+
+public class FuelInjectionPerfection {
+
+	class Node {
+		String numberS;
+		int steps;
+
+		public Node(String numberS, int steps) {
+			this.numberS = numberS;
+			this.steps = steps;
+		}
+	}
+
+	ArrayList<Node> currentNodes = new ArrayList<Node>();
+	HashMap<String, Integer> traversedNodes = new HashMap<String, Integer>();
+	int count = 0;
+	int maxCurrNodes = 0;
+
+	public String addOne(String numberS) {
+		int carryForward = 1;
+		int indx = numberS.length() - 1;
+		String newNumberS = "";
+		do {
+			int digit = Integer.parseInt(numberS.substring(indx, indx + 1)) + carryForward;
+			carryForward = digit / 10;
+			newNumberS = (digit % 10) + newNumberS;
+			indx--;
+		} while (carryForward > 0 && indx >= 0);
+		return (carryForward == 0 ? numberS.substring(0, indx + 1) : carryForward) + newNumberS;
+	}
+
+	public String subtractOne(String numberS) {
+		int loan = -1;
+		int indx = numberS.length() - 1;
+		String newNumberS = "";
+		do {
+			int digit = Integer.parseInt(numberS.substring(indx, indx + 1)) + loan;
+			if (digit == -1) {
+				digit = 9;
+				loan = -1;
+			} else {
+				loan = 0;
+			}
+			newNumberS = digit + newNumberS;
+			indx--;
+		} while (loan < 0 && indx >= 0);
+		numberS = numberS.substring(0, indx + 1) + newNumberS;
+
+		if (numberS.startsWith("0")) {
+			return numberS.substring(1);
+		} else {
+			return numberS;
+		}
+	}
+
+	public String divideEvenNumberBy2(String numberS) // only add +1, -1
+	{
+		String newNumberS = "";
+		int currentDigit;
+		int carryForward = 0;
+		for (int i = 0; i < numberS.length(); i++) {
+			currentDigit = Integer.parseInt(numberS.substring(i, i + 1)) + carryForward;
+			newNumberS = newNumberS + currentDigit / 2;
+			carryForward = (currentDigit % 2 * 10);
+		}
+
+		if (newNumberS.startsWith("0")) {
+			return newNumberS.substring(1);
+		} else {
+			return newNumberS;
+		}
+	}
+
+	public void checkNextLevel() {
+		String newNumberS;
+		maxCurrNodes = Math.max(currentNodes.size(), maxCurrNodes);
+		for (int i = currentNodes.size() - 1; i >= 0; i--) {
+			count++;
+			// if its odd number..
+			if (Integer.parseInt(currentNodes.get(i).numberS.substring(currentNodes.get(i).numberS.length() - 1))
+					% 2 == 1) {
+				// -1 case
+				newNumberS = subtractOne(currentNodes.get(i).numberS);
+				if (!traversedNodes.containsKey(newNumberS)) {
+					currentNodes.add(new Node(newNumberS, currentNodes.get(i).steps + 1));
+					traversedNodes.put(newNumberS, currentNodes.get(i).steps + 1);
+					if (newNumberS.equals("1"))
+						break;
+				}
+
+				// +1 case
+				newNumberS = addOne(currentNodes.get(i).numberS);
+				if (!traversedNodes.containsKey(newNumberS)) {
+					currentNodes.add(new Node(newNumberS, currentNodes.get(i).steps + 1));
+					traversedNodes.put(newNumberS, currentNodes.get(i).steps + 1);
+					if (newNumberS.equals("1"))
+						break;
+				}
+			} else {
+				newNumberS = divideEvenNumberBy2(currentNodes.get(i).numberS);
+				currentNodes.add(new Node(newNumberS, currentNodes.get(i).steps + 1));
+				traversedNodes.put(newNumberS, currentNodes.get(i).steps + 1);
+				if (newNumberS.equals("1"))
+					break;
+			}
+			currentNodes.remove(i);
+		}
+	}
+
+	public static int solution(String x) {
+		FuelInjectionPerfection solution = new FuelInjectionPerfection();
+
+		solution.currentNodes.add(solution.new Node(x, 0));
+		solution.traversedNodes.put(x, 0);
+		do {
+			solution.checkNextLevel();
+		} while (solution.currentNodes.size() > 0 && !solution.traversedNodes.containsKey("1"));
+
+		return solution.traversedNodes.get("1");
+	}
+
+	public static void main(String[] args) {
+		System.out.println(FuelInjectionPerfection.solution(
+				"897120975187263872163872132198739827398217398213183487872138787173246543653897120975187263872163872132198739827398217398213183487872138787173246543653897120975187263872163872132198739827398217398213183487872138787173246543653897120975187263872163872132198739827398217398213183487872138787173246543653"));
+		
+		System.out.println(FuelInjectionPerfection.solution(
+				"15"));
+	}
+}
